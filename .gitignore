@@ -1,0 +1,6 @@
+deploy_*.log
+*.pem
+*.key
+node_modules/
+.vscode/
+.env
