@@ -69,13 +69,38 @@ echo "Preparing remote environment..." | tee -a $LOG_FILE
 
 ssh -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" << EOF
 set -e
-sudo apt update -y
-sudo apt install -y docker.io docker-compose nginx
+echo "Installing Docker and Nginx..."
+
+# Detect package manager and install dependencies
+if command -v apt &> /dev/null; then
+    sudo apt update -y && sudo apt install -y docker.io docker-compose nginx
+elif command -v yum &> /dev/null; then
+    sudo yum update -y
+    sudo yum install -y docker nginx
+    # Manually install Docker Compose
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+
+elif command -v dnf &> /dev/null; then
+    sudo dnf update -y
+    sudo dnf install -y docker nginx
+    # Manually install Docker Compose
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+
+else
+    echo "❌ No supported package manager found."
+    exit 1
+fi
+
 sudo systemctl enable docker
 sudo systemctl start docker
 sudo systemctl enable nginx
 sudo systemctl start nginx
-sudo usermod -aG docker $USER
+sudo usermod -aG docker ec2-user
+
+# Ensure project directory exists and has correct permissions
+sudo mkdir -p /home/$SSH_USER/project && sudo chown -R $SSH_USER:$SSH_USER /home/$SSH_USER/project
 EOF
 
 echo "Remote environment setup complete." | tee -a $LOG_FILE
@@ -94,8 +119,8 @@ echo "Deploying Docker application..." | tee -a $LOG_FILE
 ssh -i "$SSH_KEY" "$SSH_USER@$SERVER_IP" << EOF
 cd /home/$SSH_USER/project
 if [ -f "docker-compose.yml" ]; then
-    sudo docker-compose down || true
-    sudo docker-compose up -d --build
+    sudo docker compose down || true
+    sudo docker compose up -d --build
 else
     sudo docker build -t stage1-app .
     sudo docker stop stage1-app || true
