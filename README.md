@@ -41,7 +41,7 @@ The script handles:
 Before running the script, make sure you have:
 - A **GitHub repository** containing a valid `Dockerfile` or `docker-compose.yml`
 - A **Personal Access Token (PAT)** with repo access  
-- A **Linux remote server (e.g., DigitalOcean, AWS EC2, etc.)**
+- A **Linux remote server (AWS EC2)**
 - SSH access to that server (username, IP, and key)
 - Bash installed on your local machine
 
